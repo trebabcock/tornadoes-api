@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,13 +15,24 @@ import (
 func GetTornadoesByRange(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
 	yss := r.URL.Query()["ys"][0]
+	mss := r.URL.Query()["ms"][0]
+	dss := r.URL.Query()["ds"][0]
 	yes := r.URL.Query()["ye"][0]
+	mes := r.URL.Query()["me"][0]
+	des := r.URL.Query()["de"][0]
 	mags := r.URL.Query()["mag"][0]
 	st := r.URL.Query()["st"][0]
 
 	ys, _ := strconv.Atoi(yss)
+	ms, _ := strconv.Atoi(mss)
+	ds, _ := strconv.Atoi(dss)
 	ye, _ := strconv.Atoi(yes)
+	me, _ := strconv.Atoi(mes)
+	de, _ := strconv.Atoi(des)
 	magss := strings.Split(mags, ",")
+
+	start := fmt.Sprintf("%d-%d-%d", ys, ms, ds)
+	end := fmt.Sprintf("%d-%d-%d", ye, me, de)
 
 	mag := []int{}
 
@@ -30,15 +42,36 @@ func GetTornadoesByRange(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	}
 
 	tornadoes := []model.Tornado{}
-	// db.Where("pizza = ?", "pepperoni").Where
-	//db.Where(model.Tornado{Mag: magInt}).Find(&tornadoes)
 	if st == "ALL" {
-		db.Where("yr >= ?", ys).Where("yr <= ?", ye).Where("mag IN ?", mag).Find(&tornadoes)
+		//db.Where("mag IN ?", mag).Where(db.Where("yr >= ?", ys).Where("mo >= ?", ms).Where("dy >= ?", ds)).Or(db.Where("yr <= ?", ye).Where("mo <= ?", me).Where("dy <= ?", de)).Find(&tornadoes)
+		db.Where("mag IN ?", mag).Where("DATE(date) >= DATE(?)", start).Where("DATE(date) <= DATE(?)", end).Find(&tornadoes)
+		//db.Raw("SELECT * FROM tornados WHERE date >= ? AND date <= ? AND mag IN ?", start, end, mag).Scan(&tornadoes)
 	} else {
-		db.Where("yr >= ?", ys).Where("yr <= ?", ye).Where("mag IN ?", mag).Where("st = ?", st).Find(&tornadoes)
+		//db.Where("mag IN ?", mag).Where("st = ?", st).Where(db.Where("yr >= ?", ys).Where("mo >= ?", ms).Where("dy >= ?", ds)).Where(db.Where("yr <= ?", ye).Where("mo <= ?", me).Where("dy <= ?", de)).Find(&tornadoes)
+		db.Where("mag IN ?", mag).Where("st = ?", st).Where("date >= ?", start).Where("date <= ?", end).Find(&tornadoes)
+
 	}
 
-	RespondJSON(w, http.StatusOK, tornadoes)
+	responseTornadoes := []model.ResponseTornado{}
+
+	for _, t := range tornadoes {
+		tor := model.ResponseTornado{
+			Id:       t.Id,
+			Geometry: t.Geometry,
+			Yr:       t.Yr,
+			Mo:       t.Mo,
+			Dy:       t.Dy,
+			St:       t.St,
+			Mag:      t.Mag,
+			Inj:      t.Inj,
+			Fat:      t.Fat,
+		}
+		responseTornadoes = append(responseTornadoes, tor)
+	}
+
+	fmt.Printf("%v\n\n", responseTornadoes)
+
+	RespondJSON(w, http.StatusOK, responseTornadoes)
 }
 
 // GetTornadoesByDate gets all tornadoes of a specified rating, state, and date
@@ -72,5 +105,22 @@ func GetTornadoesByDate(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 		db.Where("yr = ?", year).Where("mo = ?", month).Where("dy = ?", day).Where("mag IN ?", mag).Where("st = ?", st).Find(&tornadoes)
 	}
 
-	RespondJSON(w, http.StatusOK, tornadoes)
+	responseTornadoes := []model.ResponseTornado{}
+
+	for _, t := range tornadoes {
+		tor := model.ResponseTornado{
+			Id:       t.Id,
+			Geometry: t.Geometry,
+			Yr:       t.Yr,
+			Mo:       t.Mo,
+			Dy:       t.Dy,
+			St:       t.St,
+			Mag:      t.Mag,
+			Inj:      t.Inj,
+			Fat:      t.Fat,
+		}
+		responseTornadoes = append(responseTornadoes, tor)
+	}
+
+	RespondJSON(w, http.StatusOK, responseTornadoes)
 }

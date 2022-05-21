@@ -34,6 +34,18 @@ type RequestBody struct {
 	State     string `json:"st"`
 }
 
+type ResponseTornado struct {
+	Id       int    `json:"id"`
+	Geometry string `json:"geometry"`
+	Yr       int    `json:"yr"`
+	Mo       int    `json:"mo"`
+	Dy       int    `json:"dy"`
+	St       string `json:"st"`
+	Mag      int    `json:"mag"`
+	Inj      int    `json:"inj"`
+	Fat      int    `json:"fat"`
+}
+
 /*
 0|id|INTEGER|0||1
 1|geometry|TEXT|0||0
