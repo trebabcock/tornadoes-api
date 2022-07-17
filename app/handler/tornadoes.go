@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -31,9 +30,6 @@ func GetTornadoesByRange(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	de, _ := strconv.Atoi(des)
 	magss := strings.Split(mags, ",")
 
-	start := fmt.Sprintf("%d-%d-%d", ys, ms, ds)
-	end := fmt.Sprintf("%d-%d-%d", ye, me, de)
-
 	mag := []int{}
 
 	for _, m := range magss {
@@ -43,12 +39,9 @@ func GetTornadoesByRange(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 
 	tornadoes := []model.Tornado{}
 	if st == "ALL" {
-		//db.Where("mag IN ?", mag).Where(db.Where("yr >= ?", ys).Where("mo >= ?", ms).Where("dy >= ?", ds)).Or(db.Where("yr <= ?", ye).Where("mo <= ?", me).Where("dy <= ?", de)).Find(&tornadoes)
-		db.Where("mag IN ?", mag).Where("DATE(date) >= DATE(?)", start).Where("DATE(date) <= DATE(?)", end).Find(&tornadoes)
-		//db.Raw("SELECT * FROM tornados WHERE date >= ? AND date <= ? AND mag IN ?", start, end, mag).Scan(&tornadoes)
+		db.Where("mag IN ?", mag).Where("st = ?", st).Where(db.Where("yr >= ?", ys).Where("mo >= ?", ms)).Where(db.Where("yr <= ?", ye).Where("mo <= ?", me)).Find(&tornadoes)
 	} else {
-		//db.Where("mag IN ?", mag).Where("st = ?", st).Where(db.Where("yr >= ?", ys).Where("mo >= ?", ms).Where("dy >= ?", ds)).Where(db.Where("yr <= ?", ye).Where("mo <= ?", me).Where("dy <= ?", de)).Find(&tornadoes)
-		db.Where("mag IN ?", mag).Where("st = ?", st).Where("date >= ?", start).Where("date <= ?", end).Find(&tornadoes)
+		db.Where("mag IN ?", mag).Where("st = ?", st).Where(db.Where("yr >= ?", ys).Where("mo >= ?", ms)).Where(db.Where("yr <= ?", ye).Where("mo <= ?", me)).Find(&tornadoes)
 
 	}
 
@@ -66,10 +59,12 @@ func GetTornadoesByRange(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 			Inj:      t.Inj,
 			Fat:      t.Fat,
 		}
-		responseTornadoes = append(responseTornadoes, tor)
+		if tor.Mo == ms && tor.Dy >= ds {
+			responseTornadoes = append(responseTornadoes, tor)
+		} else if tor.Mo == me && tor.Dy <= de {
+			responseTornadoes = append(responseTornadoes, tor)
+		}
 	}
-
-	fmt.Printf("%v\n\n", responseTornadoes)
 
 	RespondJSON(w, http.StatusOK, responseTornadoes)
 }
